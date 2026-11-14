@@ -1,5 +1,6 @@
+
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,91 +10,85 @@
 href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
 <style>
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+*{box-sizing:border-box;margin:0;padding:0}
+
+body{
+ font-family:Arial,sans-serif;
+ background:#eef2f7;
 }
 
-body {
-    font-family: Arial, sans-serif;
-    background: #111827;
+header{
+ background:#087bdb;
+ color:white;
+ padding:16px;
+ text-align:center;
 }
 
-header {
-    background: #101c35;
-    color: white;
-    padding: 15px;
-    text-align: center;
+header h2{font-size:23px}
+header p{font-size:13px;margin-top:5px}
+
+.panel{
+ background:white;
+ padding:14px;
+ box-shadow:0 2px 8px #0002;
 }
 
-header h2 {
-    font-size: 23px;
+input{
+ width:100%;
+ padding:13px;
+ margin:5px 0;
+ border:1px solid #bbb;
+ border-radius:7px;
+ font-size:15px;
 }
 
-header p {
-    color: #a5c5ff;
-    margin-top: 5px;
+button{
+ border:0;
+ border-radius:7px;
+ padding:12px;
+ margin:4px 2px;
+ background:#087bdb;
+ color:white;
+ font-size:14px;
+ cursor:pointer;
 }
 
-.search {
-    display: flex;
-    gap: 8px;
-    padding: 12px;
-    background: #17243c;
+button:hover{background:#005ca8}
+
+.green{background:#159447}
+.orange{background:#ed8c16}
+
+#map{
+ height:65vh;
+ min-height:380px;
+ width:100%;
 }
 
-input, button, select {
-    padding: 12px;
-    border: none;
-    border-radius: 8px;
-    font-size: 14px;
+#status{
+ padding:10px;
+ font-size:14px;
+ color:#333;
 }
 
-input {
-    flex: 1;
-    min-width: 0;
+#results{
+ max-height:160px;
+ overflow:auto;
 }
 
-button {
-    background: #1685ff;
-    color: white;
-    cursor: pointer;
+.result{
+ background:#f1f5f9;
+ padding:10px;
+ margin:5px 0;
+ border-radius:6px;
+ cursor:pointer;
+ font-size:13px;
 }
 
-button:hover {
-    background: #0065d5;
-}
-
-.controls {
-    display: flex;
-    gap: 8px;
-    padding: 10px;
-    background: #17243c;
-    flex-wrap: wrap;
-}
-
-.controls button {
-    flex: 1;
-    min-width: 100px;
-}
-
-#map {
-    width: 100%;
-    height: calc(100vh - 205px);
-    min-height: 400px;
-}
-
-.info {
-    background: #101c35;
-    color: white;
-    padding: 12px;
-    text-align: center;
-    font-size: 13px;
-}
-
-.leaflet-popup-content-wrapper {
-    border-radius: 10px;
+footer{
+ text-align:center;
+ padding:12px;
+ font-size:12px;
+ color:#666;
 }
 </style>
 </head>
@@ -101,212 +96,310 @@ button:hover {
 <body>
 
 <header>
-    <h2>🌍 BIG CHHATWAI MAP</h2>
-    <p>Explore Every Road • Every Village • Every Place</p>
+<h2>🗺️ BIG CHHATWAI MAP</h2>
+<p>Village Explorer | Big Chhatwai to Jarwahi</p>
 </header>
 
-<div class="search">
-    <input id="searchBox" type="text"
-    placeholder="Search village or place...">
-    <button onclick="searchPlace()">Search</button>
+<div class="panel">
+
+<input id="from" value="Big Chhatwai, India"
+placeholder="Starting location">
+
+<input id="to" value="Jarwahi, India"
+placeholder="Destination location">
+
+<button onclick="findRoute()">🛣️ रास्ता दिखाओ</button>
+<button class="green" onclick="myLocation()">📍 मेरी Location</button>
+<button class="orange" onclick="clearRoute()">Clear Route</button>
+
+<input id="search" placeholder="🔍 गाँव या जगह खोजें">
+
+<button onclick="searchPlace()">Search Place</button>
+
+<div id="results"></div>
+
 </div>
 
-<div class="controls">
-    <button onclick="myLocation()">📍 My Location</button>
-    <button onclick="showAll()">🌍 Full Map</button>
-    <button onclick="clearRoute()">❌ Clear Route</button>
+<div id="status">
+मैप लोड हो रहा है...
 </div>
 
 <div id="map"></div>
 
-<div class="info">
-    🗺️ Explore Big Chhatwai | Map data © OpenStreetMap
-</div>
+<footer>
+Powered by OpenStreetMap | Leaflet
+</footer>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
 
-// IMPORTANT:
-// Replace these sample coordinates with the exact
-// coordinates of Big Chhatwai after confirming its location.
+// MAP SETUP
+const map = L.map('map').setView([22.5, 82.0], 6);
 
-const villageLat = 22.0;
-const villageLng = 79.0;
-
-const map = L.map('map').setView(
-    [villageLat, villageLng], 13
-);
-
-// OpenStreetMap live map
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors',
-    maxZoom: 19
-}).addTo(map);
+L.tileLayer(
+'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+{
+ maxZoom:19,
+ attribution:'© OpenStreetMap contributors'
+}
+).addTo(map);
 
 let routeLayer = null;
 let markers = [];
+let startPoint = null;
+let endPoint = null;
 
-const mainMarker = L.marker([
-    villageLat, villageLng
-]).addTo(map);
+// LOCATION SEARCH
+async function geocode(place){
 
-mainMarker.bindPopup(
-    "<b>BIG CHHATWAI</b><br>Village Map"
-);
+ const url =
+ 'https://nominatim.openstreetmap.org/search?format=jsonv2&q='
+ + encodeURIComponent(place)
+ + '&countrycodes=in&limit=5';
 
-function searchPlace() {
+ const response = await fetch(url);
+ if(!response.ok) throw new Error("Location search failed");
 
-    const query = document.getElementById("searchBox").value.trim();
-
-    if (!query) {
-        alert("Please enter a place name!");
-        return;
-    }
-
-    fetch(
-        "https://nominatim.openstreetmap.org/search?format=json&q=" +
-        encodeURIComponent(query + ", India")
-    )
-    .then(response => response.json())
-    .then(data => {
-
-        if (data.length === 0) {
-            alert("Place not found!");
-            return;
-        }
-
-        const place = data[0];
-
-        const lat = Number(place.lat);
-        const lon = Number(place.lon);
-
-        map.setView([lat, lon], 16);
-
-        const marker = L.marker([lat, lon]).addTo(map);
-
-        marker.bindPopup(
-            "<b>" + place.display_name + "</b>"
-        ).openPopup();
-
-        markers.push(marker);
-    })
-    .catch(() => alert("Search failed. Check internet connection."));
+ return await response.json();
 }
 
-// User current location
-function myLocation() {
+// DISPLAY SEARCH RESULTS
+async function selectLocation(place, callback){
 
-    if (!navigator.geolocation) {
-        alert("Location not supported!");
-        return;
-    }
+ document.getElementById('status').innerText =
+ 'Searching: '+place;
 
-    navigator.geolocation.getCurrentPosition(
-        position => {
+ try{
+  const results = await geocode(place);
 
-            const lat = position.coords.latitude;
-            const lon = position.coords.longitude;
+  if(results.length===0){
+   alert("Location नहीं मिली। District और State के साथ खोजें।");
+   return;
+  }
 
-            map.setView([lat, lon], 17);
+  const box = document.getElementById('results');
+  box.innerHTML = "<b>अपनी सही Location चुनें:</b>";
 
-            L.marker([lat, lon])
-                .addTo(map)
-                .bindPopup("📍 Your Current Location")
-                .openPopup();
+  results.forEach(item=>{
 
-        },
-        () => alert("Please allow location permission!")
-    );
+   const div=document.createElement('div');
+   div.className='result';
+   div.textContent=item.display_name;
+
+   div.onclick=()=>{
+
+    const point=[
+     Number(item.lat),
+     Number(item.lon)
+    ];
+
+    callback(point,item.display_name);
+
+    map.setView(point,15);
+
+    box.innerHTML="Selected: "+item.display_name;
+   };
+
+   box.appendChild(div);
+  });
+
+  document.getElementById('status').innerText =
+  "Location चुनें।";
+
+ }catch(error){
+  alert("Internet या location search में समस्या हुई।");
+ }
 }
 
-// Show full map
-function showAll() {
-    map.setView([villageLat, villageLng], 13);
+// ROUTE FINDER
+async function findRoute(){
+
+ const from=document.getElementById('from').value.trim();
+ const to=document.getElementById('to').value.trim();
+
+ if(!from || !to){
+  alert("Starting और Destination दोनों भरें");
+  return;
+ }
+
+ document.getElementById('status').innerText =
+ "Searching locations...";
+
+ try{
+
+  const a=await geocode(from);
+  const b=await geocode(to);
+
+  if(!a.length || !b.length){
+   alert("गाँव नहीं मिला। District और State जोड़कर खोजें।");
+   return;
+  }
+
+  // If more than one match exists, use first result.
+  // Verify the selected place before proceeding.
+  startPoint=[
+   Number(a[0].lat),
+   Number(a[0].lon)
+  ];
+
+  endPoint=[
+   Number(b[0].lat),
+   Number(b[0].lon)
+  ];
+
+  if(!confirm(
+   "From: "+a[0].display_name+
+   "\nTo: "+b[0].display_name+
+   "\n\nक्या ये सही जगहें हैं?"
+  )){
+   document.getElementById('status').innerText =
+   "जगह की जानकारी बदलें और दोबारा खोजें।";
+   return;
+  }
+
+  showRoute();
+
+ }catch(error){
+  document.getElementById('status').innerText =
+  "Location खोजने में समस्या हुई।";
+ }
 }
 
-// Clear route
-function clearRoute() {
+// DRAW ROUTE
+async function showRoute(){
 
-    if (routeLayer) {
-        map.removeLayer(routeLayer);
-        routeLayer = null;
-    }
+ if(!startPoint || !endPoint) return;
 
-    alert("Route cleared!");
+ document.getElementById('status').innerText =
+ "सड़क का रास्ता बनाया जा रहा है...";
+
+ const url=
+ 'https://router.project-osrm.org/route/v1/driving/'
+ +startPoint[1]+','+startPoint[0]+';'
+ +endPoint[1]+','+endPoint[0]
+ +'?overview=full&geometries=geojson';
+
+ try{
+
+  const response=await fetch(url);
+  const data=await response.json();
+
+  if(data.code!=="Ok" || !data.routes.length){
+   throw new Error("Route not found");
+  }
+
+  if(routeLayer) map.removeLayer(routeLayer);
+
+  markers.forEach(m=>map.removeLayer(m));
+  markers=[];
+
+  const route=data.routes[0];
+
+  routeLayer=L.geoJSON(route.geometry,{
+   style:{
+    color:'#087bdb',
+    weight:6,
+    opacity:0.85
+   }
+  }).addTo(map);
+
+  markers.push(
+   L.marker(startPoint).addTo(map)
+   .bindPopup("🚩 Starting Location").openPopup()
+  );
+
+  markers.push(
+   L.marker(endPoint).addTo(map)
+   .bindPopup("🏁 Destination")
+  );
+
+  map.fitBounds(routeLayer.getBounds(),{
+   padding:[35,35]
+  });
+
+  const km=(route.distance/1000).toFixed(2);
+  const minutes=Math.round(route.duration/60);
+
+  document.getElementById('status').innerHTML=
+   "✅ रास्ता मिल गया!<br>"+
+   "📏 दूरी: "+km+" KM<br>"+
+   "⏱️ अनुमानित समय: "+minutes+" मिनट";
+
+ }catch(error){
+
+  document.getElementById('status').innerText=
+  "रास्ता नहीं मिला। इस क्षेत्र की सड़कें routing data में उपलब्ध नहीं हो सकतीं।";
+
+ }
 }
 
-// Click on map to explore locations
-map.on('click', function(e) {
+// SEARCH ANY PLACE
+function searchPlace(){
 
-    const lat = e.latlng.lat;
-    const lon = e.latlng.lng;
+ const place=document.getElementById('search').value.trim();
 
-    const marker = L.marker([lat, lon]).addTo(map);
+ if(!place){
+  alert("जगह का नाम लिखें");
+  return;
+ }
 
-    marker.bindPopup(`
-        <b>Selected Location</b><br>
-        Latitude: ${lat.toFixed(5)}<br>
-        Longitude: ${lon.toFixed(5)}<br>
-        <button onclick="getRoute(${lat},${lon})">
-        🚗 Get Route
-        </button>
-    `).openPopup();
+ selectLocation(place,(point,name)=>{
 
-    markers.push(marker);
-});
+  L.marker(point).addTo(map)
+   .bindPopup(name).openPopup();
 
-// Get road route using OSRM
-function getRoute(lat, lon) {
+ });
+}
 
-    if (!navigator.geolocation) {
-        alert("Location not supported!");
-        return;
-    }
+// GPS LOCATION
+function myLocation(){
 
-    navigator.geolocation.getCurrentPosition(position => {
+ if(!navigator.geolocation){
+  alert("GPS उपलब्ध नहीं है");
+  return;
+ }
 
-        const startLat = position.coords.latitude;
-        const startLon = position.coords.longitude;
+ navigator.geolocation.getCurrentPosition(position=>{
 
-        const url =
-        `https://router.project-osrm.org/route/v1/driving/${startLon},${startLat};${lon},${lat}?overview=full&geometries=geojson`;
+  const point=[
+   position.coords.latitude,
+   position.coords.longitude
+  ];
 
-        fetch(url)
-        .then(res => res.json())
-        .then(data => {
+  map.setView(point,16);
 
-            if (!data.routes || !data.routes.length) {
-                alert("Route not found!");
-                return;
-            }
+  L.marker(point).addTo(map)
+   .bindPopup("📍 आपकी Location")
+   .openPopup();
 
-            if (routeLayer) {
-                map.removeLayer(routeLayer);
-            }
+  document.getElementById('from').value=
+   point[0]+","+point[1];
 
-            routeLayer = L.geoJSON(
-                data.routes[0].geometry,
-                {
-                    style: {
-                        color: "#006eff",
-                        weight: 6
-                    }
-                }
-            ).addTo(map);
+  document.getElementById('status').innerText=
+   "आपकी Location मिल गई!";
 
-            map.fitBounds(routeLayer.getBounds());
+ },()=>{
+  alert("Location Permission दें और HTTPS पर वेबसाइट खोलें।");
+ });
+}
 
-            const km = (
-                data.routes[0].distance / 1000
-            ).toFixed(2);
+// CLEAR ROUTE
+function clearRoute(){
 
-            alert("Distance: " + km + " KM");
+ if(routeLayer){
+  map.removeLayer(routeLayer);
+  routeLayer=null;
+ }
 
-        })
-        .catch(() => alert("Route service unavailable!"));
+ markers.forEach(m=>map.removeLayer(m));
+ markers=[];
 
-    }, () => alert("Allow location permission first!"));
+ startPoint=null;
+ endPoint=null;
+
+ document.getElementById('status').innerText=
+ "Map साफ कर दिया गया।";
 }
 
 </script>
