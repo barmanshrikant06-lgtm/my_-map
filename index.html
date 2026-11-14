@@ -1,68 +1,99 @@
-
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Big Chhatwai Map</title>
+<title>Big Chhatwai Village Map</title>
 
 <link rel="stylesheet"
 href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
 <style>
 * {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
 body {
-  font-family: Arial, sans-serif;
-  background: #f1f5f9;
+    font-family: Arial, sans-serif;
+    background: #111827;
 }
 
 header {
-  background: #075985;
-  color: white;
-  padding: 16px;
-  text-align: center;
+    background: #101c35;
+    color: white;
+    padding: 15px;
+    text-align: center;
 }
 
 header h2 {
-  font-size: 23px;
+    font-size: 23px;
 }
 
 header p {
-  margin-top: 5px;
+    color: #a5c5ff;
+    margin-top: 5px;
 }
 
-.controls {
-  padding: 12px;
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
+.search {
+    display: flex;
+    gap: 8px;
+    padding: 12px;
+    background: #17243c;
+}
+
+input, button, select {
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+input {
+    flex: 1;
+    min-width: 0;
 }
 
 button {
-  padding: 11px 15px;
-  border: none;
-  border-radius: 7px;
-  background: #0284c7;
-  color: white;
-  cursor: pointer;
-  font-size: 14px;
+    background: #1685ff;
+    color: white;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #0065d5;
+}
+
+.controls {
+    display: flex;
+    gap: 8px;
+    padding: 10px;
+    background: #17243c;
+    flex-wrap: wrap;
+}
+
+.controls button {
+    flex: 1;
+    min-width: 100px;
 }
 
 #map {
-  width: 100%;
-  height: 75vh;
-  min-height: 400px;
+    width: 100%;
+    height: calc(100vh - 205px);
+    min-height: 400px;
 }
 
-footer {
-  padding: 12px;
-  text-align: center;
-  color: #334155;
+.info {
+    background: #101c35;
+    color: white;
+    padding: 12px;
+    text-align: center;
+    font-size: 13px;
+}
+
+.leaflet-popup-content-wrapper {
+    border-radius: 10px;
 }
 </style>
 </head>
@@ -70,68 +101,213 @@ footer {
 <body>
 
 <header>
-  <h2>🗺️ Big Chhatwai Map</h2>
-  <p>बिग छतवई, जिला शहडोल, मध्य प्रदेश</p>
+    <h2>🌍 BIG CHHATWAI MAP</h2>
+    <p>Explore Every Road • Every Village • Every Place</p>
 </header>
 
+<div class="search">
+    <input id="searchBox" type="text"
+    placeholder="Search village or place...">
+    <button onclick="searchPlace()">Search</button>
+</div>
+
 <div class="controls">
-  <button onclick="showVillage()">📍 Big Chhatwai</button>
-  <button onclick="roadMap()">🛣️ Road Map</button>
-  <button onclick="satelliteMap()">🛰️ Satellite</button>
-  <button onclick="directions()">🚗 Directions</button>
+    <button onclick="myLocation()">📍 My Location</button>
+    <button onclick="showAll()">🌍 Full Map</button>
+    <button onclick="clearRoute()">❌ Clear Route</button>
 </div>
 
 <div id="map"></div>
 
-<footer>
-  Big Chhatwai - Shahdol, Madhya Pradesh
-</footer>
+<div class="info">
+    🗺️ Explore Big Chhatwai | Map data © OpenStreetMap
+</div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
 
-// Approximate starting view; verify the exact village location
-// before using this as a navigation map.
-const map = L.map('map').setView([23.30, 81.36], 11);
+// IMPORTANT:
+// Replace these sample coordinates with the exact
+// coordinates of Big Chhatwai after confirming its location.
 
-let roadLayer;
+const villageLat = 22.0;
+const villageLng = 79.0;
 
-function roadMap() {
-  if (roadLayer) map.removeLayer(roadLayer);
+const map = L.map('map').setView(
+    [villageLat, villageLng], 13
+);
 
-  roadLayer = L.tileLayer(
-    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    { maxZoom: 19 }
-  ).addTo(map);
+// OpenStreetMap live map
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors',
+    maxZoom: 19
+}).addTo(map);
+
+let routeLayer = null;
+let markers = [];
+
+const mainMarker = L.marker([
+    villageLat, villageLng
+]).addTo(map);
+
+mainMarker.bindPopup(
+    "<b>BIG CHHATWAI</b><br>Village Map"
+);
+
+function searchPlace() {
+
+    const query = document.getElementById("searchBox").value.trim();
+
+    if (!query) {
+        alert("Please enter a place name!");
+        return;
+    }
+
+    fetch(
+        "https://nominatim.openstreetmap.org/search?format=json&q=" +
+        encodeURIComponent(query + ", India")
+    )
+    .then(response => response.json())
+    .then(data => {
+
+        if (data.length === 0) {
+            alert("Place not found!");
+            return;
+        }
+
+        const place = data[0];
+
+        const lat = Number(place.lat);
+        const lon = Number(place.lon);
+
+        map.setView([lat, lon], 16);
+
+        const marker = L.marker([lat, lon]).addTo(map);
+
+        marker.bindPopup(
+            "<b>" + place.display_name + "</b>"
+        ).openPopup();
+
+        markers.push(marker);
+    })
+    .catch(() => alert("Search failed. Check internet connection."));
 }
 
-function satelliteMap() {
-  if (roadLayer) map.removeLayer(roadLayer);
+// User current location
+function myLocation() {
 
-  roadLayer = L.tileLayer(
-    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    { maxZoom: 19 }
-  ).addTo(map);
+    if (!navigator.geolocation) {
+        alert("Location not supported!");
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+        position => {
+
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+
+            map.setView([lat, lon], 17);
+
+            L.marker([lat, lon])
+                .addTo(map)
+                .bindPopup("📍 Your Current Location")
+                .openPopup();
+
+        },
+        () => alert("Please allow location permission!")
+    );
 }
 
-function showVillage() {
-  map.setView([23.30, 81.36], 14);
+// Show full map
+function showAll() {
+    map.setView([villageLat, villageLng], 13);
 }
 
-function directions() {
-  window.open(
-    'https://www.google.com/maps/dir/?api=1&destination=Big+Chhatwai,+Shahdol,+Madhya+Pradesh',
-    '_blank'
-  );
+// Clear route
+function clearRoute() {
+
+    if (routeLayer) {
+        map.removeLayer(routeLayer);
+        routeLayer = null;
+    }
+
+    alert("Route cleared!");
 }
 
-roadMap();
+// Click on map to explore locations
+map.on('click', function(e) {
 
-L.marker([23.30, 81.36])
-  .addTo(map)
-  .bindPopup('<b>Big Chhatwai</b><br>Shahdol, Madhya Pradesh')
-  .openPopup();
+    const lat = e.latlng.lat;
+    const lon = e.latlng.lng;
+
+    const marker = L.marker([lat, lon]).addTo(map);
+
+    marker.bindPopup(`
+        <b>Selected Location</b><br>
+        Latitude: ${lat.toFixed(5)}<br>
+        Longitude: ${lon.toFixed(5)}<br>
+        <button onclick="getRoute(${lat},${lon})">
+        🚗 Get Route
+        </button>
+    `).openPopup();
+
+    markers.push(marker);
+});
+
+// Get road route using OSRM
+function getRoute(lat, lon) {
+
+    if (!navigator.geolocation) {
+        alert("Location not supported!");
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(position => {
+
+        const startLat = position.coords.latitude;
+        const startLon = position.coords.longitude;
+
+        const url =
+        `https://router.project-osrm.org/route/v1/driving/${startLon},${startLat};${lon},${lat}?overview=full&geometries=geojson`;
+
+        fetch(url)
+        .then(res => res.json())
+        .then(data => {
+
+            if (!data.routes || !data.routes.length) {
+                alert("Route not found!");
+                return;
+            }
+
+            if (routeLayer) {
+                map.removeLayer(routeLayer);
+            }
+
+            routeLayer = L.geoJSON(
+                data.routes[0].geometry,
+                {
+                    style: {
+                        color: "#006eff",
+                        weight: 6
+                    }
+                }
+            ).addTo(map);
+
+            map.fitBounds(routeLayer.getBounds());
+
+            const km = (
+                data.routes[0].distance / 1000
+            ).toFixed(2);
+
+            alert("Distance: " + km + " KM");
+
+        })
+        .catch(() => alert("Route service unavailable!"));
+
+    }, () => alert("Allow location permission first!"));
+}
 
 </script>
 
