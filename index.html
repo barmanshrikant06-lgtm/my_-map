@@ -7,88 +7,93 @@
 <title>Big Chhatwai Village Map</title>
 
 <link rel="stylesheet"
-href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-
-body{
- font-family:Arial,sans-serif;
- background:#eef2f7;
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-header{
- background:#087bdb;
- color:white;
- padding:16px;
- text-align:center;
+body {
+  font-family: Arial, sans-serif;
+  background: #eef2f7;
 }
 
-header h2{font-size:23px}
-header p{font-size:13px;margin-top:5px}
-
-.panel{
- background:white;
- padding:14px;
- box-shadow:0 2px 8px #0002;
+header {
+  background: #166534;
+  color: white;
+  padding: 17px;
+  text-align: center;
 }
 
-input{
- width:100%;
- padding:13px;
- margin:5px 0;
- border:1px solid #bbb;
- border-radius:7px;
- font-size:15px;
+header h2 {
+  font-size: 23px;
 }
 
-button{
- border:0;
- border-radius:7px;
- padding:12px;
- margin:4px 2px;
- background:#087bdb;
- color:white;
- font-size:14px;
- cursor:pointer;
+header p {
+  font-size: 13px;
+  margin-top: 6px;
 }
 
-button:hover{background:#005ca8}
-
-.green{background:#159447}
-.orange{background:#ed8c16}
-
-#map{
- height:65vh;
- min-height:380px;
- width:100%;
+.search {
+  display: flex;
+  gap: 7px;
+  padding: 12px;
+  background: white;
 }
 
-#status{
- padding:10px;
- font-size:14px;
- color:#333;
+.search input {
+  flex: 1;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 7px;
+  font-size: 15px;
 }
 
-#results{
- max-height:160px;
- overflow:auto;
+button {
+  border: none;
+  border-radius: 7px;
+  padding: 11px 14px;
+  color: white;
+  background: #15803d;
+  cursor: pointer;
+  font-size: 14px;
 }
 
-.result{
- background:#f1f5f9;
- padding:10px;
- margin:5px 0;
- border-radius:6px;
- cursor:pointer;
- font-size:13px;
+.controls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px;
+  background: white;
 }
 
-footer{
- text-align:center;
- padding:12px;
- font-size:12px;
- color:#666;
+.controls button {
+  background: #2563eb;
+}
+
+#map {
+  height: 72vh;
+  min-height: 420px;
+  width: 100%;
+}
+
+.info {
+  padding: 12px;
+  background: white;
+  font-size: 14px;
+  color: #333;
+}
+
+footer {
+  padding: 12px;
+  text-align: center;
+  background: #166534;
+  color: white;
+  font-size: 12px;
 }
 </style>
 </head>
@@ -96,311 +101,153 @@ footer{
 <body>
 
 <header>
-<h2>🗺️ BIG CHHATWAI MAP</h2>
-<p>Village Explorer | Big Chhatwai to Jarwahi</p>
+  <h2>🗺️ BIG CHHATWAI MAP</h2>
+  <p>Big Chhatwai • Chhatwai • आसपास के गाँव</p>
 </header>
 
-<div class="panel">
-
-<input id="from" value="Big Chhatwai, India"
-placeholder="Starting location">
-
-<input id="to" value="Jarwahi, India"
-placeholder="Destination location">
-
-<button onclick="findRoute()">🛣️ रास्ता दिखाओ</button>
-<button class="green" onclick="myLocation()">📍 मेरी Location</button>
-<button class="orange" onclick="clearRoute()">Clear Route</button>
-
-<input id="search" placeholder="🔍 गाँव या जगह खोजें">
-
-<button onclick="searchPlace()">Search Place</button>
-
-<div id="results"></div>
-
+<div class="search">
+  <input id="place"
+  type="text"
+  placeholder="गाँव, सड़क या जगह खोजें...">
+  <button onclick="searchPlace()">खोजें</button>
 </div>
 
-<div id="status">
-मैप लोड हो रहा है...
+<div class="controls">
+  <button onclick="goHome()">🏠 Chhatwai</button>
+  <button onclick="searchNamed('Badi Chhatwai, Shahdol, Madhya Pradesh')">Big Chhatwai</button>
+  <button onclick="searchNamed('Jarwahi, Shahdol, Madhya Pradesh')">Jarwahi</button>
+  <button onclick="myLocation()">📍 मेरी लोकेशन</button>
+  <button onclick="map.zoomIn()">＋ Zoom</button>
+  <button onclick="map.zoomOut()">－ Zoom</button>
 </div>
 
 <div id="map"></div>
 
+<div class="info" id="status">
+  मैप लोड हो रहा है...
+</div>
+
 <footer>
-Powered by OpenStreetMap | Leaflet
+  Map Data © OpenStreetMap Contributors
 </footer>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
 
-// MAP SETUP
-const map = L.map('map').setView([22.5, 82.0], 6);
+// Map starting position: Shahdol region
+const map = L.map('map').setView([23.30, 81.36], 12);
 
+// OpenStreetMap roads and places
 L.tileLayer(
-'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-{
- maxZoom:19,
- attribution:'© OpenStreetMap contributors'
-}
+  'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+  {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap contributors'
+  }
 ).addTo(map);
 
-let routeLayer = null;
-let markers = [];
-let startPoint = null;
-let endPoint = null;
+let marker;
 
-// LOCATION SEARCH
-async function geocode(place){
-
- const url =
- 'https://nominatim.openstreetmap.org/search?format=jsonv2&q='
- + encodeURIComponent(place)
- + '&countrycodes=in&limit=5';
-
- const response = await fetch(url);
- if(!response.ok) throw new Error("Location search failed");
-
- return await response.json();
-}
-
-// DISPLAY SEARCH RESULTS
-async function selectLocation(place, callback){
-
- document.getElementById('status').innerText =
- 'Searching: '+place;
-
- try{
-  const results = await geocode(place);
-
-  if(results.length===0){
-   alert("Location नहीं मिली। District और State के साथ खोजें।");
-   return;
-  }
-
-  const box = document.getElementById('results');
-  box.innerHTML = "<b>अपनी सही Location चुनें:</b>";
-
-  results.forEach(item=>{
-
-   const div=document.createElement('div');
-   div.className='result';
-   div.textContent=item.display_name;
-
-   div.onclick=()=>{
-
-    const point=[
-     Number(item.lat),
-     Number(item.lon)
-    ];
-
-    callback(point,item.display_name);
-
-    map.setView(point,15);
-
-    box.innerHTML="Selected: "+item.display_name;
-   };
-
-   box.appendChild(div);
-  });
+// Search a place using OpenStreetMap
+async function searchNamed(query) {
 
   document.getElementById('status').innerText =
-  "Location चुनें।";
+    'जगह खोजी जा रही है...';
 
- }catch(error){
-  alert("Internet या location search में समस्या हुई।");
- }
+  try {
+    const url =
+      'https://nominatim.openstreetmap.org/search?format=json&limit=1&q='
+      + encodeURIComponent(query);
+
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (!data.length) {
+      document.getElementById('status').innerText =
+        'जगह नहीं मिली। दूसरा नाम लिखकर खोजें।';
+      return;
+    }
+
+    const lat = Number(data[0].lat);
+    const lon = Number(data[0].lon);
+
+    map.setView([lat, lon], 16);
+
+    if (marker) map.removeLayer(marker);
+
+    marker = L.marker([lat, lon])
+      .addTo(map)
+      .bindPopup(data[0].display_name)
+      .openPopup();
+
+    document.getElementById('status').innerText =
+      'मिली हुई जगह: ' + data[0].display_name;
+
+  } catch(error) {
+    document.getElementById('status').innerText =
+      'इंटरनेट कनेक्शन चेक करें।';
+  }
 }
 
-// ROUTE FINDER
-async function findRoute(){
+// Search button
+function searchPlace() {
+  const value = document.getElementById('place').value.trim();
 
- const from=document.getElementById('from').value.trim();
- const to=document.getElementById('to').value.trim();
-
- if(!from || !to){
-  alert("Starting और Destination दोनों भरें");
-  return;
- }
-
- document.getElementById('status').innerText =
- "Searching locations...";
-
- try{
-
-  const a=await geocode(from);
-  const b=await geocode(to);
-
-  if(!a.length || !b.length){
-   alert("गाँव नहीं मिला। District और State जोड़कर खोजें।");
-   return;
+  if (!value) {
+    alert('पहले जगह का नाम लिखें');
+    return;
   }
 
-  // If more than one match exists, use first result.
-  // Verify the selected place before proceeding.
-  startPoint=[
-   Number(a[0].lat),
-   Number(a[0].lon)
-  ];
-
-  endPoint=[
-   Number(b[0].lat),
-   Number(b[0].lon)
-  ];
-
-  if(!confirm(
-   "From: "+a[0].display_name+
-   "\nTo: "+b[0].display_name+
-   "\n\nक्या ये सही जगहें हैं?"
-  )){
-   document.getElementById('status').innerText =
-   "जगह की जानकारी बदलें और दोबारा खोजें।";
-   return;
-  }
-
-  showRoute();
-
- }catch(error){
-  document.getElementById('status').innerText =
-  "Location खोजने में समस्या हुई।";
- }
+  searchNamed(value + ', Madhya Pradesh, India');
 }
 
-// DRAW ROUTE
-async function showRoute(){
+// Home button
+function goHome() {
+  searchNamed('Chhatwai, Sohagpur, Shahdol, Madhya Pradesh, India');
+}
 
- if(!startPoint || !endPoint) return;
+// My location
+function myLocation() {
 
- document.getElementById('status').innerText =
- "सड़क का रास्ता बनाया जा रहा है...";
-
- const url=
- 'https://router.project-osrm.org/route/v1/driving/'
- +startPoint[1]+','+startPoint[0]+';'
- +endPoint[1]+','+endPoint[0]
- +'?overview=full&geometries=geojson';
-
- try{
-
-  const response=await fetch(url);
-  const data=await response.json();
-
-  if(data.code!=="Ok" || !data.routes.length){
-   throw new Error("Route not found");
+  if (!navigator.geolocation) {
+    alert('आपके ब्राउजर में लोकेशन उपलब्ध नहीं है');
+    return;
   }
 
-  if(routeLayer) map.removeLayer(routeLayer);
+  navigator.geolocation.getCurrentPosition(
+    function(position) {
 
-  markers.forEach(m=>map.removeLayer(m));
-  markers=[];
+      const lat = position.coords.latitude;
+      const lon = position.coords.longitude;
 
-  const route=data.routes[0];
+      map.setView([lat, lon], 17);
 
-  routeLayer=L.geoJSON(route.geometry,{
-   style:{
-    color:'#087bdb',
-    weight:6,
-    opacity:0.85
-   }
-  }).addTo(map);
+      if (marker) map.removeLayer(marker);
 
-  markers.push(
-   L.marker(startPoint).addTo(map)
-   .bindPopup("🚩 Starting Location").openPopup()
+      marker = L.marker([lat, lon])
+        .addTo(map)
+        .bindPopup('आपकी लोकेशन')
+        .openPopup();
+
+      document.getElementById('status').innerText =
+        'आपकी लोकेशन दिखाई जा रही है';
+
+    },
+    function() {
+      alert('लोकेशन की अनुमति दें।');
+    }
   );
-
-  markers.push(
-   L.marker(endPoint).addTo(map)
-   .bindPopup("🏁 Destination")
-  );
-
-  map.fitBounds(routeLayer.getBounds(),{
-   padding:[35,35]
-  });
-
-  const km=(route.distance/1000).toFixed(2);
-  const minutes=Math.round(route.duration/60);
-
-  document.getElementById('status').innerHTML=
-   "✅ रास्ता मिल गया!<br>"+
-   "📏 दूरी: "+km+" KM<br>"+
-   "⏱️ अनुमानित समय: "+minutes+" मिनट";
-
- }catch(error){
-
-  document.getElementById('status').innerText=
-  "रास्ता नहीं मिला। इस क्षेत्र की सड़कें routing data में उपलब्ध नहीं हो सकतीं।";
-
- }
 }
 
-// SEARCH ANY PLACE
-function searchPlace(){
+// Enter key search
+document.getElementById('place')
+.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') searchPlace();
+});
 
- const place=document.getElementById('search').value.trim();
-
- if(!place){
-  alert("जगह का नाम लिखें");
-  return;
- }
-
- selectLocation(place,(point,name)=>{
-
-  L.marker(point).addTo(map)
-   .bindPopup(name).openPopup();
-
- });
-}
-
-// GPS LOCATION
-function myLocation(){
-
- if(!navigator.geolocation){
-  alert("GPS उपलब्ध नहीं है");
-  return;
- }
-
- navigator.geolocation.getCurrentPosition(position=>{
-
-  const point=[
-   position.coords.latitude,
-   position.coords.longitude
-  ];
-
-  map.setView(point,16);
-
-  L.marker(point).addTo(map)
-   .bindPopup("📍 आपकी Location")
-   .openPopup();
-
-  document.getElementById('from').value=
-   point[0]+","+point[1];
-
-  document.getElementById('status').innerText=
-   "आपकी Location मिल गई!";
-
- },()=>{
-  alert("Location Permission दें और HTTPS पर वेबसाइट खोलें।");
- });
-}
-
-// CLEAR ROUTE
-function clearRoute(){
-
- if(routeLayer){
-  map.removeLayer(routeLayer);
-  routeLayer=null;
- }
-
- markers.forEach(m=>map.removeLayer(m));
- markers=[];
-
- startPoint=null;
- endPoint=null;
-
- document.getElementById('status').innerText=
- "Map साफ कर दिया गया।";
-}
+// Automatically find Chhatwai on opening
+searchNamed('Chhatwai, Sohagpur, Shahdol, Madhya Pradesh, India');
 
 </script>
 
