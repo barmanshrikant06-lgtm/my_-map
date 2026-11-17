@@ -4,96 +4,86 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Big Chhatwai Village Map</title>
+<title>Complete Chhatwai Road Map</title>
 
 <link rel="stylesheet"
 href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
 <style>
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+*{box-sizing:border-box;margin:0;padding:0}
+
+body{
+ font-family:Arial,sans-serif;
+ background:#f1f5f9;
 }
 
-body {
-  font-family: Arial, sans-serif;
-  background: #eef2f7;
+header{
+ background:#14532d;
+ color:white;
+ text-align:center;
+ padding:16px 8px;
 }
 
-header {
-  background: #166534;
-  color: white;
-  padding: 17px;
-  text-align: center;
+header h2{font-size:23px}
+header p{font-size:13px;margin-top:6px}
+
+.toolbar{
+ display:flex;
+ flex-wrap:wrap;
+ gap:8px;
+ padding:10px;
+ background:white;
 }
 
-header h2 {
-  font-size: 23px;
+button{
+ padding:11px 13px;
+ border:0;
+ border-radius:7px;
+ background:#15803d;
+ color:white;
+ font-weight:bold;
+ cursor:pointer;
 }
 
-header p {
-  font-size: 13px;
-  margin-top: 6px;
+button.blue{background:#2563eb}
+button.orange{background:#ea580c}
+
+#map{
+ width:100%;
+ height:75vh;
+ min-height:450px;
 }
 
-.search {
-  display: flex;
-  gap: 7px;
-  padding: 12px;
-  background: white;
+#status{
+ background:white;
+ padding:12px;
+ font-size:14px;
+ color:#333;
 }
 
-.search input {
-  flex: 1;
-  min-width: 0;
-  padding: 12px;
-  border: 1px solid #ccc;
-  border-radius: 7px;
-  font-size: 15px;
+.legend{
+ background:white;
+ padding:12px;
+ display:flex;
+ flex-wrap:wrap;
+ gap:12px;
+ font-size:12px;
 }
 
-button {
-  border: none;
-  border-radius: 7px;
-  padding: 11px 14px;
-  color: white;
-  background: #15803d;
-  cursor: pointer;
-  font-size: 14px;
+.line{
+ display:inline-block;
+ width:22px;
+ height:4px;
+ margin-right:5px;
+ vertical-align:middle;
 }
 
-.controls {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  padding: 10px;
-  background: white;
-}
-
-.controls button {
-  background: #2563eb;
-}
-
-#map {
-  height: 72vh;
-  min-height: 420px;
-  width: 100%;
-}
-
-.info {
-  padding: 12px;
-  background: white;
-  font-size: 14px;
-  color: #333;
-}
-
-footer {
-  padding: 12px;
-  text-align: center;
-  background: #166534;
-  color: white;
-  font-size: 12px;
+footer{
+ background:#14532d;
+ color:white;
+ text-align:center;
+ padding:12px;
+ font-size:12px;
 }
 </style>
 </head>
@@ -101,155 +91,225 @@ footer {
 <body>
 
 <header>
-  <h2>🗺️ BIG CHHATWAI MAP</h2>
-  <p>Big Chhatwai • Chhatwai • आसपास के गाँव</p>
+ <h2>🗺️ CHHATWAI FULL ROAD MAP</h2>
+ <p>पूरा छतवई गांव • सभी उपलब्ध सड़कें • गलियां</p>
 </header>
 
-<div class="search">
-  <input id="place"
-  type="text"
-  placeholder="गाँव, सड़क या जगह खोजें...">
-  <button onclick="searchPlace()">खोजें</button>
+<div class="toolbar">
+ <button onclick="goHome()">🏠 छतवई</button>
+ <button class="blue" onclick="loadRoads()">🛣️ सभी सड़कें लोड करें</button>
+ <button class="blue" onclick="map.zoomIn()">＋ Zoom</button>
+ <button class="blue" onclick="map.zoomOut()">－ Zoom</button>
+ <button class="orange" onclick="myLocation()">📍 मेरी लोकेशन</button>
 </div>
 
-<div class="controls">
-  <button onclick="goHome()">🏠 Chhatwai</button>
-  <button onclick="searchNamed('Badi Chhatwai, Shahdol, Madhya Pradesh')">Big Chhatwai</button>
-  <button onclick="searchNamed('Jarwahi, Shahdol, Madhya Pradesh')">Jarwahi</button>
-  <button onclick="myLocation()">📍 मेरी लोकेशन</button>
-  <button onclick="map.zoomIn()">＋ Zoom</button>
-  <button onclick="map.zoomOut()">－ Zoom</button>
+<div class="legend">
+ <span><i class="line" style="background:red"></i>मुख्य सड़क</span>
+ <span><i class="line" style="background:#2563eb"></i>अन्य सड़क</span>
+ <span><i class="line" style="background:#eab308"></i>गली</span>
+ <span><i class="line" style="background:#16a34a"></i>कच्चा रास्ता</span>
+ <span><i class="line" style="background:#9333ea"></i>पगडंडी</span>
 </div>
 
 <div id="map"></div>
 
-<div class="info" id="status">
-  मैप लोड हो रहा है...
+<div id="status">
+ छतवई का मैप तैयार हो रहा है...
 </div>
 
 <footer>
-  Map Data © OpenStreetMap Contributors
+ © OpenStreetMap Contributors | Road Map
 </footer>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
 
-// Map starting position: Shahdol region
-const map = L.map('map').setView([23.30, 81.36], 12);
+// CHHATWAI LOCATION
+const HOME = [23.3923,81.3542];
 
-// OpenStreetMap roads and places
+// Map
+const map = L.map('map').setView(HOME,15);
+
+// Map background
 L.tileLayer(
-  'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-  {
-    maxZoom: 19,
-    attribution: '&copy; OpenStreetMap contributors'
-  }
+ 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+ {
+  maxZoom:20,
+  attribution:'© OpenStreetMap'
+ }
 ).addTo(map);
 
-let marker;
+// Village marker
+L.marker(HOME)
+ .addTo(map)
+ .bindPopup('<b>छतवई गांव</b><br>शहडोल, मध्य प्रदेश')
+ .openPopup();
 
-// Search a place using OpenStreetMap
-async function searchNamed(query) {
+// Road layer
+let roadLayer = L.layerGroup().addTo(map);
 
-  document.getElementById('status').innerText =
-    'जगह खोजी जा रही है...';
-
-  try {
-    const url =
-      'https://nominatim.openstreetmap.org/search?format=json&limit=1&q='
-      + encodeURIComponent(query);
-
-    const response = await fetch(url);
-    const data = await response.json();
-
-    if (!data.length) {
-      document.getElementById('status').innerText =
-        'जगह नहीं मिली। दूसरा नाम लिखकर खोजें।';
-      return;
-    }
-
-    const lat = Number(data[0].lat);
-    const lon = Number(data[0].lon);
-
-    map.setView([lat, lon], 16);
-
-    if (marker) map.removeLayer(marker);
-
-    marker = L.marker([lat, lon])
-      .addTo(map)
-      .bindPopup(data[0].display_name)
-      .openPopup();
-
-    document.getElementById('status').innerText =
-      'मिली हुई जगह: ' + data[0].display_name;
-
-  } catch(error) {
-    document.getElementById('status').innerText =
-      'इंटरनेट कनेक्शन चेक करें।';
-  }
+// Status
+function status(message){
+ document.getElementById('status').innerText=message;
 }
 
-// Search button
-function searchPlace() {
-  const value = document.getElementById('place').value.trim();
+// Road colors
+function roadStyle(type){
 
-  if (!value) {
-    alert('पहले जगह का नाम लिखें');
-    return;
-  }
+ if(type==='motorway' || type==='trunk' ||
+    type==='primary' || type==='secondary'){
+  return {color:'red',weight:5};
+ }
 
-  searchNamed(value + ', Madhya Pradesh, India');
+ if(type==='tertiary' || type==='unclassified'){
+  return {color:'#2563eb',weight:4};
+ }
+
+ if(type==='residential' || type==='living_street' ||
+    type==='service'){
+  return {color:'#eab308',weight:3};
+ }
+
+ if(type==='track'){
+  return {color:'#16a34a',weight:3,dashArray:'6,5'};
+ }
+
+ if(type==='path' || type==='footway' ||
+    type==='bridleway' || type==='steps'){
+  return {color:'#9333ea',weight:2,dashArray:'4,5'};
+ }
+
+ return {color:'#64748b',weight:2};
 }
 
-// Home button
-function goHome() {
-  searchNamed('Chhatwai, Sohagpur, Shahdol, Madhya Pradesh, India');
-}
+// Load all available roads from OpenStreetMap
+async function loadRoads(){
 
-// My location
-function myLocation() {
+ status('सड़कें डाउनलोड हो रही हैं... कृपया इंतजार करें।');
 
-  if (!navigator.geolocation) {
-    alert('आपके ब्राउजर में लोकेशन उपलब्ध नहीं है');
-    return;
+ roadLayer.clearLayers();
+
+ // Approximate area around Chhatwai.
+ // South, West, North, East
+ const bbox='23.35,81.31,23.43,81.40';
+
+ const query=`
+ [out:json][timeout:60];
+ (
+   way["highway"](${bbox});
+ );
+ out body geom;
+ `;
+
+ const servers=[
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter'
+ ];
+
+ let data=null;
+
+ for(const server of servers){
+
+  try{
+   const response=await fetch(server,{
+    method:'POST',
+    body:'data='+encodeURIComponent(query)
+   });
+
+   if(!response.ok) continue;
+
+   const result=await response.json();
+
+   if(result.elements){
+    data=result;
+    break;
+   }
+
+  }catch(error){
+   console.log('Server unavailable:',server);
   }
+ }
 
-  navigator.geolocation.getCurrentPosition(
-    function(position) {
+ if(!data){
+  status('सड़क डेटा लोड नहीं हुआ। इंटरनेट चेक करके फिर कोशिश करें।');
+  return;
+ }
 
-      const lat = position.coords.latitude;
-      const lon = position.coords.longitude;
+ let count=0;
 
-      map.setView([lat, lon], 17);
+ data.elements.forEach(road=>{
 
-      if (marker) map.removeLayer(marker);
+  if(!road.geometry || road.geometry.length<2) return;
 
-      marker = L.marker([lat, lon])
-        .addTo(map)
-        .bindPopup('आपकी लोकेशन')
-        .openPopup();
+  const coordinates=road.geometry.map(point=>[
+   point.lat,point.lon
+  ]);
 
-      document.getElementById('status').innerText =
-        'आपकी लोकेशन दिखाई जा रही है';
+  const type=road.tags?.highway || 'road';
+  const name=road.tags?.name || road.tags?.ref || 'बिना नाम का रास्ता';
 
-    },
-    function() {
-      alert('लोकेशन की अनुमति दें।');
-    }
+  const line=L.polyline(
+   coordinates,
+   roadStyle(type)
   );
+
+  line.bindPopup(
+   '<b>'+name+'</b><br>'+
+   'रास्ते का प्रकार: '+type
+  );
+
+  line.addTo(roadLayer);
+  count++;
+
+ });
+
+ status(
+  'सड़क डेटा लोड हो गया! कुल '+count+
+  ' सड़क/रास्ते मिले। मैप पर Zoom करके देखें।'
+ );
+
 }
 
-// Enter key search
-document.getElementById('place')
-.addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') searchPlace();
-});
+// Home
+function goHome(){
+ map.setView(HOME,16);
+}
 
-// Automatically find Chhatwai on opening
-searchNamed('Chhatwai, Sohagpur, Shahdol, Madhya Pradesh, India');
+// Current location
+function myLocation(){
+
+ if(!navigator.geolocation){
+  alert('लोकेशन उपलब्ध नहीं है');
+  return;
+ }
+
+ navigator.geolocation.getCurrentPosition(
+  function(position){
+
+   const point=[
+    position.coords.latitude,
+    position.coords.longitude
+   ];
+
+   map.setView(point,18);
+
+   L.marker(point)
+    .addTo(map)
+    .bindPopup('आपकी लोकेशन')
+    .openPopup();
+
+  },
+  function(){
+   alert('लोकेशन की अनुमति दें।');
+  }
+ );
+
+}
+
+// Load roads automatically
+loadRoads();
 
 </script>
-
 </body>
 </html>
